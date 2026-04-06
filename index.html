@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Haven · AI Home Finder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f0d0a; font-family: Georgia, serif; color: #f0ebe3; min-height: 100vh; display: flex; flex-direction: column; }
+    #app { display: flex; flex-direction: column; height: 100vh; }
+    .header { border-bottom: 1px solid #2a2520; padding: 14px 22px; display: flex; align-items: center; gap: 12px; background: #110f0c; position: sticky; top: 0; z-index: 10; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #c9a96e, #8b6914); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .header-title { font-size: 16px; font-weight: bold; color: #e8d5b0; }
+    .header-sub { font-size: 10px; color: #7a6d5a; letter-spacing: 0.08em; text-transform: uppercase; }
+    .status { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade8088; }
+    .status span { font-size: 11px; color: #7a6d5a; }
+    .chat { flex: 1; overflow-y: auto; padding: 22px 18px; max-width: 740px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .msg { display: flex; animation: fadeUp 0.3s ease; }
+    .msg.user { justify-content: flex-end; }
+    .msg-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #c9a96e, #8b6914); display: flex; align-items: center; justify-content: center; font-size: 13px; margin-right: 9px; flex-shrink: 0; margin-top: 3px; }
+    .bubble { max-width: 76%; padding: 11px 16px; font-size: 15px; line-height: 1.65; }
+    .bubble.ai { border-radius: 18px 18px 18px 4px; background: #1c1915; border: 1px solid #2a2520; color: #d4c9b8; }
+    .bubble.user { border-radius: 18px 18px 4px 18px; background: #c9a96e18; border: 1px solid #c9a96e33; color: #e8d5b0; }
+    .typing { display: flex; align-items: center; gap: 9px; }
+    .typing-bubble { padding: 11px 16px; border-radius: 18px 18px 18px 4px; background: #1c1915; border: 1px solid #2a2520; display: flex; gap: 5px; align-items: center; }
+    .dot-bounce { width: 7px; height: 7px; border-radius: 50%; background: #c9a96e; animation: bounce 1s ease infinite; }
+    .listings-header { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #c9a96e; margin-bottom: 12px; }
+    .card { background: #1a1713; border: 1px solid #2a2520; border-radius: 16px; overflow: hidden; margin-bottom: 14px; transition: border-color 0.2s; cursor: pointer; animation: fadeUp 0.4s ease; }
+    .card:hover { border-color: #c9a96e55; }
+    .card-img { height: 155px; background: #1e1a15; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .no-photo { text-align: center; }
+    .no-photo div { font-size: 32px; }
+    .no-photo span { font-size: 11px; color: #3a3530; }
+    .card-badge { position: absolute; top: 10px; right: 10px; background: #0f0d0acc; border: 1px solid #c9a96e44; border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #c9a96e; }
+    .card-body { padding: 14px 16px; }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .card-address { font-size: 13px; font-weight: bold; color: #e8d5b0; line-height: 1.3; }
+    .card-city { font-size: 11px; color: #7a6d5a; margin-top: 2px; }
+    .card-price { font-size: 17px; font-weight: bold; color: #c9a96e; flex-shrink: 0; }
+    .card-details { display: flex; gap: 12px; margin-top: 10px; font-size: 12px; color: #9a8d7a; flex-wrap: wrap; }
+    .card-dom { font-size: 11px; color: #4a4035; margin-top: 6px; }
+    .card-btn { margin-top: 12px; width: 100%; padding: 9px; border-radius: 10px; background: linear-gradient(135deg, #c9a96e, #8b6914); border: none; color: #0f0d0a; font-weight: bold; font-size: 13px; cursor: pointer; font-family: Georgia, serif; }
+    .no-results { background: #1a1713; border: 1px solid #2a2520; border-radius: 16px; padding: 24px; text-align: center; }
+    .error-box { background: #1a1713; border: 1px solid #8b291422; border-radius: 12px; padding: 10px 14px; font-size: 12px; color: #e8705a; }
+    .loading-box { background: #1a1713; border: 1px solid #2a2520; border-radius: 16px; padding: 24px; text-align: center; color: #c9a96e; font-size: 14px; }
+    .input-area { border-top: 1px solid #2a2520; padding: 13px 18px; background: #110f0c; position: sticky; bottom: 0; }
+    .input-wrap { max-width: 740px; margin: 0 auto; }
+    .input-box { display: flex; gap: 9px; align-items: flex-end; background: #1c1915; border: 1px solid #2a2520; border-radius: 13px; padding: 7px 11px; }
+    textarea { flex: 1; background: transparent; border: none; outline: none; color: #e8d5b0; font-size: 15px; font-family: Georgia, serif; resize: none; line-height: 1.5; padding: 4px 0; }
+    textarea::placeholder { color: #3a3530; }
+    .send-btn { width: 33px; height: 33px; border-radius: 50%; border: none; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; flex-shrink: 0; cursor: pointer; }
+    .send-btn.active { background: linear-gradient(135deg, #c9a96e, #8b6914); color: #0f0d0a; }
+    .send-btn.inactive { background: #2a2520; color: #4a4035; cursor: default; }
+    .input-footer { text-align: center; font-size: 11px; color: #2a2520; margin-top: 5px; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes bounce { 0%,100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-4px); opacity: 1; } }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="avatar">🏡</div>
+    <div>
+      <div class="header-title">Haven</div>
+      <div class="header-sub">AI Home Finder · Live Listings</div>
+    </div>
+    <div class="status">
+      <div class="dot"></div>
+      <span>Connected</span>
+    </div>
+  </div>
+  <div class="chat" id="chat"></div>
+  <div class="input-area">
+    <div class="input-wrap">
+      <div class="input-box">
+        <textarea id="input" placeholder="Describe your dream home..." rows="1" onkeydown="handleKey(event)" oninput="updateBtn()"></textarea>
+        <button class="send-btn inactive" id="sendBtn" onclick="sendMessage()">↑</button>
+      </div>
+      <div class="input-footer">Haven · Powered by Claude AI + RentCast</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are Haven, a warm AI home finding assistant. Have a natural conversation to understand what the buyer wants.
+
+Once you have city, budget, and bedroom count, output this at the end of your message:
+
+<SEARCH>
+{"city": "Austin", "state": "TX", "minBeds": 3, "maxPrice": 400000, "minBaths": 2}
+</SEARCH>
+
+Rules:
+- Need city, state, maxPrice, minBeds before outputting SEARCH
+- state is always 2-letter abbreviation
+- Ask naturally for missing info one question at a time
+- Keep responses short and warm`;
+
+let messages = [{ role: "assistant", content: "Hey! I'm Haven 🏡 Tell me what you're looking for — city, budget, bedrooms, must-haves. The more you share, the better I can match you." }];
+let loading = false;
+
+const photos = [
+  "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=600&q=80",
+  "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80",
+  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80",
+  "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=600&q=80",
+  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80",
+];
+
+function formatPrice(p) { return p ? '$' + Number(p).toLocaleString() : 'Price N/A'; }
+
+function renderMessages() {
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  messages.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = 'msg' + (msg.role === 'user' ? ' user' : '');
+    div.innerHTML = msg.role === 'assistant'
+      ? `<div class="msg-avatar">🏡</div><div class="bubble ai">${msg.content}</div>`
+      : `<div class="bubble user">${msg.content}</div>`;
+    chat.appendChild(div);
+  });
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping() {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'typing'; div.id = 'typing';
+  div.innerHTML = `<div class="msg-avatar">🏡</div><div class="typing-bubble"><div class="dot-bounce" style="animation-delay:0s"></div><div class="dot-bounce" style="animation-delay:0.2s"></div><div class="dot-bounce" style="animation-delay:0.4s"></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function hideTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+function showLoadingListings() {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.id = 'listings-area';
+  div.innerHTML = `<div class="loading-box">🔍 Searching live listings...</div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showListings(listings) {
+  const area = document.getElementById('listings-area');
+  if (!area) return;
+  if (!listings || listings.length === 0) {
+    area.innerHTML = `<div class="no-results"><div>🔍</div><div style="color:#9a8d7a;font-size:14px">No listings found. Try a different city or higher budget.</div></div>`;
+    return;
+  }
+  let html = `<div class="listings-header">✦ ${listings.length} Live Listings Found</div>`;
+  listings.forEach((home, idx) => {
+    const photo = home.photoUrls?.[0] || photos[idx % photos.length];
+    const dom = home.daysOnMarket === 0 ? 'Listed today' : home.daysOnMarket ? `${home.daysOnMarket} days on market` : '';
+    html += `<div class="card">
+      <div class="card-img"><img src="${photo}" alt="" onerror="this.parentElement.innerHTML='<div class=no-photo><div>🏠</div><span>No photo</span></div>'"/><div class="card-badge">${home.status || 'Active'}</div></div>
+      <div class="card-body">
+        <div class="card-top">
+          <div><div class="card-address">${home.formattedAddress || home.addressLine1 || 'Address unavailable'}</div><div class="card-city">${home.city || ''}${home.state ? ', ' + home.state : ''} ${home.zipCode || ''}</div></div>
+          <div class="card-price">${formatPrice(home.price || home.listPrice)}</div>
+        </div>
+        <div class="card-details">${home.bedrooms ? `<span>🛏 ${home.bedrooms} bed</span>` : ''}${home.bathrooms ? `<span>🚿 ${home.bathrooms} bath</span>` : ''}${home.squareFootage ? `<span>📐 ${Number(home.squareFootage).toLocaleString()} sqft</span>` : ''}${home.yearBuilt ? `<span>📅 ${home.yearBuilt}</span>` : ''}</div>
+        ${dom ? `<div class="card-dom">${dom}</div>` : ''}
+        <button class="card-btn">Request a Tour →</button>
+      </div>
+    </div>`;
+  });
+  area.innerHTML = html;
+  document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+}
+
+async function fetchListings(criteria) {
+  showLoadingListings();
+  try {
+    const params = new URLSearchParams();
+    if (criteria.city) params.append('city', criteria.city);
+    if (criteria.state) params.append('state', criteria.state);
+    if (criteria.minBeds) params.append('bedroomsMin', criteria.minBeds);
+    if (criteria.maxPrice) params.append('priceMax', criteria.maxPrice);
+    if (criteria.minBaths) params.append('bathroomsMin', criteria.minBaths);
+    const res = await fetch(`/.netlify/functions/listings?${params.toString()}`);
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const data = await res.json();
+    showListings(Array.isArray(data) ? data : (data.data || []));
+  } catch (err) {
+    const area = document.getElementById('listings-area');
+    if (area) area.innerHTML = `<div class="error-box">⚠️ ${err.message}</div>`;
+  }
+}
+
+async function sendMessage() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text || loading) return;
+  loading = true;
+  messages.push({ role: 'user', content: text });
+  renderMessages();
+  input.value = '';
+  updateBtn();
+  showTyping();
+  try {
+    const res = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM_PROMPT, messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || 'Sorry, something went wrong.';
+    const searchMatch = raw.match(/<SEARCH>([\s\S]*?)<\/SEARCH>/);
+    const clean = raw.replace(/<SEARCH>[\s\S]*?<\/SEARCH>/g, '').trim();
+    hideTyping();
+    messages.push({ role: 'assistant', content: clean });
+    renderMessages();
+    if (searchMatch) { try { fetchListings(JSON.parse(searchMatch[1].trim())); } catch(e) {} }
+  } catch(err) {
+    hideTyping();
+    messages.push({ role: 'assistant', content: 'Error: ' + err.message });
+    renderMessages();
+  }
+  loading = false;
+  updateBtn();
+}
+
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function updateBtn() {
+  const btn = document.getElementById('sendBtn');
+  const val = document.getElementById('input').value.trim();
+  btn.className = 'send-btn ' + (val && !loading ? 'active' : 'inactive');
+}
+
+renderMessages();
+</script>
+</body>
+</html>
